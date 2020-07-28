@@ -1,0 +1,81 @@
+# based on https://docs.projectcalico.org/manifests/calico.yaml
+job "calico" {
+    region = "[[ .region ]]"
+    datacenters = [[ "[[ .datacenter ]]" ]]
+
+    type = "system"
+
+    constraint {
+        attribute = "${attr.cpu.arch}"
+        operator = "=="
+        value = "amd64"
+    }
+
+    update {
+        max_parallel      = 1
+        health_check      = "checks"
+        min_healthy_time  = "10s"
+        healty_deadline   = "5m"
+        progress_deadline = "10m"
+        auto_revert       = true
+        auto_promote      = true
+        stagger           = "15s"`
+    }
+
+    group "calico-node" {
+
+        task "upgrade-ipam" {
+            lifecycle {
+                hook    = "prestart"
+                sidecar = false
+            }
+ 
+             config {
+                mounts = [
+                    {
+                        type = "bind"
+                        target = "/host/opt/cni/bin"
+                        source = "/opt/cni/bin"
+                        readonly = false
+                    },
+                    {
+                        type = "bind"
+                        target = "/host/etc/cni/net.d"
+                        source = "/etc/cni/net.d"
+                        readonly = false
+                    },
+                ]                
+            }
+        }
+
+        task "install-cni" {
+            driver = "docker"
+            lifecycle {
+                hook     = "prestart"
+                sidecar  = false
+            }
+
+            config {
+                mounts = [
+                    {
+                        type = "bind"
+                        target = "/host/opt/cni/bin"
+                        source = "/opt/cni/bin"
+                        readonly = false
+                    },
+                    {
+                        type = "bind"
+                        target = "/host/etc/cni/net.d"
+                        source = "/etc/cni/net.d"
+                        readonly = false
+                    },
+                ]                
+            }
+        }
+
+        task "calico" {
+
+        }
+
+    }
+}
